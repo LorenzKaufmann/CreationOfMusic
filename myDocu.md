@@ -13,11 +13,17 @@
     - auto caching of audio files
     - can easily be expanded
     - you have control
+    - spatial audio
+    - radio like system
+    - has visualization build in but rather weak
+    - fast radio test demo is not working, request to radio stations are blocked
 - audiojs
     - ultra simple and straight forward
     - uses only html5
     - available in all browsers therefor
     - pretty simple an available to view code online
-    - 
+    - used for audio tags and html players
+- websockets
+    - https://stackoverflow.com/questions/56293960/how-to-make-client-client-connection-in-js-without-node-js
 
-# Maybe later add possibility to realtime audio
+-> client places block and needs to select from various audio files -> tells server to serve this audio to all users in the lobby
