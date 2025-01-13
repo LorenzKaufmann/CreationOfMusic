@@ -25,5 +25,8 @@
     - used for audio tags and html players
 - websockets
     - https://stackoverflow.com/questions/56293960/how-to-make-client-client-connection-in-js-without-node-js
+- webrtc
 
 -> client places block and needs to select from various audio files -> tells server to serve this audio to all users in the lobby
+
+![image](Concept.png)
