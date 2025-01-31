@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<head>
+  <script>
+
+    async function joinRoom() {
+      var roomName = document.getElementById("roomName").value;
+      var status = document.getElementById("status");
+      
+      if(roomName.length == 0) {
+        console.log(roomName)
+        status.textContent = "Empty Room Name! Please Enter Room Name";
+        return
+      } else {
+        console.log(roomName)
+        status.textContent = "";
+      }
+      
+      const resp = await fetch("http://localhost:8080", {
+          body: btoa(JSON.stringify(pc.localDescription)),
+          method: "POST"
+      })
+
+    }
+
+    async function join() {
+      let pc = new RTCPeerConnection({
+      iceServers: [
+        
+      ]
+      });
+      console.log(pc)
+      pc.onconnectionstatechange = e => {
+        log(pc.iceConnectionState);
+        console.log("ahaaa");
+      };
+      pc.onicecandidate = (event => sendDescription(event, pc, 10));
+      pc.addTransceiver('audio')
+      pc.createOffer()
+        .then(d => pc.setLocalDescription(d))
+        .catch(log)
+    
+      pc.ontrack = function (event) {
+        var audio = new Audio();
+        audio.controls = "controls";
+        audio.srcObject =  event.streams[0]
+        audio.play();
+        document.getElementById("addSendHere").appendChild(audio);
+      }
+    }
+    
+    
+    
+    
+    function publish() {
+      console.log("started");
+      let pc = new RTCPeerConnection({
+      iceServers: [
+        
+      ]
+      });
+      console.log(pc)
+      pc.onconnectionstatechange = e => {
+        log(pc.iceConnectionState);
+        console.log("ahaaa");
+      };
+      pc.onicecandidate = event => sendDescription(event, pc, 10);
+      pc.onnegotiationneeded = (e) =>
+        pc
+          .createOffer()
+          .then((d) => pc.setLocalDescription(d))
+          .catch(console.error);
+      var audio = new Audio("./Frisson.mp3");
+      audio.controls = "controls";
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const stream_dest = ctx.createMediaStreamDestination();
+      const source = ctx.createMediaElementSource(audio);
+      source.connect(stream_dest);
+    
+      const stream2 = stream_dest.stream;
+      audio.play();
+      pc.addTrack(stream2.getTracks()[0], stream2); 
+    
+     
+     
+    }
+    
+    var log = msg => {
+    document.getElementById('status').innerHTML += msg + '<br>'
+    };
+    
+    async function sendDescription(event, pc, soundId) {
+      console.log("do")
+      if (event.candidate === null) {
+        document.getElementById('localSessionDescription').value = btoa(JSON.stringify(pc.localDescription))
+        const resp = await fetch("http://localhost:8080", {
+          body: btoa(JSON.stringify(pc.localDescription)),
+          method: "POST"
+        })
+        const json = await resp.ok
+        setTimeout(async function() {
+          const resp = await fetch(`http://localhost:8080/test?soundId=${soundId}`, {
+            body: btoa(JSON.stringify(pc.localDescription)),
+            method: "POST",
+          })
+          const json = await resp.text()
+          try {
+            pc.setRemoteDescription(JSON.parse(atob(json)))
+          } catch (e) {
+            alert(e)
+          }
+        }, 1000);
+      }
+    }
+    
+    
+    </script>
+</head>
+<body>
+  <label>Enter Room Name</label>
+  <br>
+  <textarea id="roomName"></textarea>
+  <br>
+  <button id="joinRoom" onclick="joinRoom()">join/create Room</button>
+  <br>
+  <br>
+  <label id="status"></label>
+</body>

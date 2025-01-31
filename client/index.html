@@ -1,7 +1,125 @@
 <!DOCTYPE html>
 <head>
-    <script src="./player.js"></script>
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+    <script>
+// Create peer conn
+const pc = new RTCPeerConnection({
+  iceServers: [
+  ],
+});
+
+pc.oniceconnectionstatechange = (e) => {
+  console.log("connection state change", pc.iceConnectionState);
+};
+pc.onicecandidate = (event) => {
+  if (event.candidate === null) {
+    document.getElementById("localSessionDescription").value = btoa(
+      JSON.stringify(pc.localDescription)
+    );
+  }
+};
+
+pc.onnegotiationneeded = (e) =>
+  pc
+    .createOffer()
+    .then((d) => pc.setLocalDescription(d))
+    .catch(console.error);
+
+pc.ontrack = (event) => {
+  console.log("Got track event", event);
+  let audio = document.createElement("audio");
+  audio.srcObject = event.streams[0];
+  audio.controls = "controls";
+  let label = document.createElement("div");
+  label.textContent = event.streams[0].id;
+  document.getElementById("serverVideos").appendChild(label);
+  document.getElementById("serverVideos").appendChild(audio);
+};
+
+navigator.mediaDevices
+  .getUserMedia({
+    video: false,
+    audio: true,
+  })
+  .then((stream) => {
+    document.getElementById("browserVideo").srcObject = stream;
+    pc.addTransceiver(stream.getAudioTracks()[0], {
+      direction: "sendonly",
+      streams: [stream],
+      sendEncodings: [
+        // for firefox order matters... first high resolution, then scaled resolutions...
+        {
+          rid: "f",
+        },
+        {
+          rid: "h",
+          scaleResolutionDownBy: 2.0,
+        },
+        {
+          rid: "q",
+          scaleResolutionDownBy: 4.0,
+        },
+      ],
+    });
+    pc.addTransceiver("audio");
+    pc.addTransceiver("audio");
+    pc.addTransceiver("audio");
+  });
+
+window.startSession = () => {
+  const sd = document.getElementById("remoteSessionDescription").value;
+  if (sd === "") {
+    return alert("Session Description must not be empty");
+  }
+
+  try {
+    console.log("answer", JSON.parse(atob(sd)));
+    pc.setRemoteDescription(JSON.parse(atob(sd)));
+  } catch (e) {
+    alert(e);
+  }
+};
+
+window.copySDP = () => {
+  const browserSDP = document.getElementById('localSessionDescription')
+
+  browserSDP.focus()
+  browserSDP.select()
+
+  try {
+    const successful = document.execCommand('copy')
+    const msg = successful ? 'successful' : 'unsuccessful'
+    console.log('Copying SDP was ' + msg)
+  } catch (err) {
+    console.log('Unable to copy SDP ' + err)
+  }
+}
+
+    </script>
 </head>
 <body>
-    <button onclick="requestAudio(10)">Test</button>
+    Browser base64 Session Description<br />
+    <textarea id="localSessionDescription" readonly="true"></textarea> <br />
+    <button onclick="window.copySDP()">
+      Copy browser SDP to clipboard
+    </button>
+    <br />
+    <br />
+    
+    Golang base64 Session Description<br />
+    <textarea id="remoteSessionDescription"></textarea> <br />
+    <button onclick="window.startSession()"> Start Session </button><br />
+    
+    <br />
+    
+    <div>
+      Browser stream<br />
+      <audio controls id="browserVideo" width="200" height="200" autoplay muted></audio>
+    </div>
+    
+    <div id="serverVideos">
+      Video from server<br />
+    </div>
+    
 </body>
+
